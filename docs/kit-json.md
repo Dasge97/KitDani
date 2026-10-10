@@ -88,7 +88,7 @@ Un paquete con varios servicios los pone en una lista: `"servicios": [ { ... }, 
 
 Son los mismos campos de `servicio.json`, descritos en [servicio-del-kit.md](servicio-del-kit.md):
 `id`, `nombre`, `descripcion`, `tipo`, `proyecto`, `comprobar`, `acciones`, `registro`,
-`caducidad_minutos`, `interruptores`, `ntfy`. Más uno propio de `kit.json`:
+`caducidad_minutos`, `interruptores`, `avisos`. Más uno propio de `kit.json`:
 
 | Campo | Qué es |
 |---|---|
@@ -113,6 +113,37 @@ datos propios (cuántas veces se ha usado hoy, última ejecución, errores), la 
 
 `estado` es `ok`, `aviso`, `error` o `parado`. Escríbelo de forma atómica: a un fichero temporal y
 después renombrar. Si no existe el fichero de `estado_ruta`, la herramienta no escribe nada.
+
+## Avisos al móvil
+
+Si el Kit tiene ntfy configurado, cada servicio tiene un modo de avisos que se elige en su detalle:
+
+| Modo | Qué avisa |
+|---|---|
+| `no` | Nada |
+| `caidas` | Cuando lleva un minuto en `error` o `parado`, y cuando vuelve. Es el modo por defecto. |
+| `todo` | Además, cuando pasa a `aviso` |
+
+El `kit.json` puede proponer el modo por defecto con `"avisos": "todo"` (o `"no"`). El usuario
+lo puede cambiar en el panel.
+
+La herramienta también puede mandar sus propios avisos a través del Kit, sin tener un token de ntfy:
+
+```powershell
+Invoke-RestMethod -Method Post http://localhost:8790/api/avisar -ContentType 'application/json' `
+  -Body '{ "id": "mi-herramienta", "titulo": "Fallo al publicar", "texto": "git push rechazado", "prioridad": 4 }'
+```
+
+```python
+import json, urllib.request
+datos = json.dumps({"id": "mi-herramienta", "titulo": "Fallo al publicar", "texto": "git push rechazado", "prioridad": 4}).encode()
+urllib.request.urlopen(urllib.request.Request("http://localhost:8790/api/avisar", datos, {"Content-Type": "application/json"}), timeout=5)
+```
+
+- `prioridad` va de 1 a 5. `tags` acepta nombres de emoji de ntfy separados por comas.
+- Responde 200 si se envió, y 409 con un `motivo` si no: avisos desactivados, ntfy sin configurar,
+  o el límite (uno cada 10 segundos y 20 por hora por servicio).
+- Envuélvelo en un try: si el Kit no está abierto, la herramienta tiene que seguir funcionando.
 
 ## Comprobar que un kit.json es válido
 

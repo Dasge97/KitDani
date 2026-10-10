@@ -67,7 +67,8 @@ hay que escapar nada. Se pueden usar las variables `{dir}`, `{kit}` y `%VAR%`, d
   - `contenedor`: `compose` (ruta del docker-compose.yml), `proyecto_compose` (nombre del proyecto, el `-p`).
   - `remoto`: `host` (alias de SSH), `url` (dirección que debe responder 200), `contenedor` (nombre del contenedor docker en el servidor), `estado_remoto` (ruta en el servidor del `estado.json`, por ejemplo `~/kit/estado/<id>.json`). Opcional `sesion_remota`: fichero cuya primera línea es una hora de caducidad en segundos Unix; el panel enseña si está abierta y cuánto le queda.
 - `caducidad_minutos`: si `estado.json` lleva más minutos sin actualizarse, el panel lo pinta como "sin noticias". `null` si la herramienta no escribe `estado.json` de forma periódica.
-- `ntfy`: tema de ntfy al que avisa la propia herramienta, o `null`. Es informativo.
+- `avisos`: modo de avisos al móvil por defecto: `"no"`, `"caidas"` (si no se pone) o `"todo"`. Se cambia en el panel. Ver [kit-json.md](kit-json.md).
+- `ntfy`: tema de ntfy al que avisa la propia herramienta por su cuenta, o `null`. Es informativo.
 
 ## estado.json
 
@@ -140,8 +141,9 @@ Se declara en la lista `interruptores`:
   `estado.json`. Orden de peor a mejor: `error`, `parado`, `aviso`, `desconocido`, `ok`.
 - Los servicios de este PC van bajo la barra de arriba. Los `remoto` van en una sección con su
   propia barra por cada `comprobar.host`.
-- Si un servicio lleva un minuto en `error` o `parado`, avisa por ntfy (servidor y tema en
-  `config.local.json`), y otra vez cuando vuelve. No avisa si se paró desde el propio panel.
+- Avisa por ntfy (servidor y tema en `config.local.json`) según el modo de avisos de cada servicio:
+  caídas de más de un minuto y vueltas, y en modo `todo` también los avisos. No avisa si se paró
+  desde el propio panel. Una herramienta puede mandar los suyos con `POST /api/avisar`.
 
 ## Si usas Claude Code para crear herramientas
 

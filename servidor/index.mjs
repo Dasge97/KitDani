@@ -5,7 +5,8 @@
 //   POST /api/accion           { id, accion: arrancar | parar | abrir | carpeta }
 //   POST /api/interruptor      { id, interruptor, valor: true | false }
 //   POST /api/comprobar        fuerza una comprobación ahora
-//   POST /api/panel            { orden: [ids] } o { id, nombre, color }: ajustes de la página (panel.json)
+//   POST /api/panel            { orden: [ids] } o { id, nombre, color, avisos }: ajustes de la página (panel.json)
+//   POST /api/avisar           { id, titulo, texto, prioridad, tags }: aviso al móvil en nombre de una herramienta
 //   POST /api/reiniciar        reinicio completo del servidor
 //   POST /api/importar         { fuente: URL de git o carpeta, instalar }: importa una herramienta con kit.json
 //   POST /api/actualizar       { id }: git pull y vuelve a leer su kit.json
@@ -23,7 +24,7 @@ import {
 } from './servicios.mjs';
 import { comprobarLocales, comprobarRemotos } from './comprobar.mjs';
 import { importar, actualizar, quitar } from './importar.mjs';
-import { pararProcesos, revisarAvisos, marcarParadoAMano, aplicarHorarios, enTramoApagado } from './extras.mjs';
+import { pararProcesos, revisarAvisos, marcarParadoAMano, aplicarHorarios, enTramoApagado, MODOS_AVISO, avisoDeHerramienta } from './extras.mjs';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -158,6 +159,9 @@ function estadoDeServicio(s) {
     nombre: ajustes.nombre || s.nombre,
     nombre_original: s.nombre,
     color: ajustes.color || null,
+    // Modo de avisos al móvil: lo elegido en el panel, si no el "avisos" de servicio.json, si no "caidas".
+    avisos: ajustes.avisos || (MODOS_AVISO.includes(s.avisos) ? s.avisos : 'caidas'),
+    avisos_por_defecto: MODOS_AVISO.includes(s.avisos) ? s.avisos : 'caidas',
     descripcion: s.descripcion || '',
     tipo: s.tipo,
     proyecto: s.proyecto || null,
@@ -224,7 +228,7 @@ function leerPanel() {
   };
 }
 
-function cambiarPanel({ orden, id, nombre, color }) {
+function cambiarPanel({ orden, id, nombre, color, avisos }) {
   const p = leerPanel();
   if (Array.isArray(orden)) p.orden = orden.map(String).slice(0, 500);
   if (id) {
@@ -235,6 +239,9 @@ function cambiarPanel({ orden, id, nombre, color }) {
     }
     if (color !== undefined) {
       if (color && COLOR_VALIDO.test(color)) a.color = color.toLowerCase(); else delete a.color;
+    }
+    if (avisos !== undefined) {
+      if (MODOS_AVISO.includes(avisos)) a.avisos = avisos; else delete a.avisos;
     }
     if (Object.keys(a).length) p.servicios[id] = a; else delete p.servicios[id];
   }
@@ -375,6 +382,14 @@ const servidor = http.createServer(async (req, res) => {
       const cuerpo = await leerCuerpo(req);
       if (cuerpo.id && !servicios.some((s) => s.id === cuerpo.id)) return responderJson(res, 404, { error: `No existe el servicio ${cuerpo.id}` });
       return responderJson(res, 200, cambiarPanel(cuerpo));
+    }
+    if (req.method === 'POST' && url.pathname === '/api/avisar') {
+      // Para que una herramienta de este PC mande un aviso al móvil sin tener su propio token de ntfy.
+      const { id, titulo, texto, prioridad, tags } = await leerCuerpo(req);
+      const s = servicios.find((x) => x.id === id);
+      if (!s) return responderJson(res, 404, { error: `No existe el servicio ${id}` });
+      const r = await avisoDeHerramienta(estadoDeServicio(s), { titulo, texto, prioridad, tags });
+      return responderJson(res, r.enviado ? 200 : 409, r);
     }
     if (req.method === 'POST' && url.pathname === '/api/importar') {
       const { fuente, instalar } = await leerCuerpo(req);

@@ -11,7 +11,8 @@ scripts que arrancan con el PC, tareas programadas, hooks, contenedores y servic
 - Botones para arrancar, parar, abrir, ver su registro y abrir su carpeta.
 - Interruptores para cambiar ajustes de una herramienta, con horario opcional.
 - Los servicios de un servidor van en su propia sección, vigilados por HTTP y por SSH.
-- Avisos al móvil por [ntfy](https://ntfy.sh) cuando algo se cae y cuando vuelve.
+- Avisos al móvil por [ntfy](https://ntfy.sh) cuando algo se cae y cuando vuelve, elegibles por servicio.
+  Las herramientas pueden mandar sus propios avisos a través del Kit, sin token propio.
 - **Importar herramientas**: cualquier herramienta con un `kit.json` se añade pegando la URL de su
   repositorio o la ruta de su carpeta. El panel la clona, comprueba requisitos, la instala y la vigila.
 - Nombre, color y orden de cada fila editables desde la página.
@@ -137,7 +138,8 @@ Solo en `http://localhost:8790`.
 | POST | `/api/importar` | `{ "fuente": URL o carpeta, "instalar": true / false }` |
 | POST | `/api/actualizar` | `{ "id" }` |
 | POST | `/api/quitar` | `{ "id", "desinstalar": true / false }` |
-| POST | `/api/panel` | `{ "orden": [ids] }` o `{ "id", "nombre", "color" }` |
+| POST | `/api/panel` | `{ "orden": [ids] }` o `{ "id", "nombre", "color", "avisos" }` |
+| POST | `/api/avisar` | `{ "id", "titulo", "texto", "prioridad", "tags" }`: aviso al móvil en nombre de un servicio |
 | POST | `/api/comprobar` | Fuerza una comprobación ahora |
 | POST | `/api/reiniciar` | Reinicia el servidor |
 

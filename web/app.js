@@ -161,6 +161,42 @@
     }
   }
 
+  const MODOS_AVISO = [
+    { valor: 'no', texto: 'No avisar' },
+    { valor: 'caidas', texto: 'Caídas' },
+    { valor: 'todo', texto: 'Caídas y avisos' },
+  ];
+
+  function selectorAvisos(s) {
+    const sel = h('select', { class: 'campo campo-corto', 'aria-label': 'Avisos al móvil' },
+      MODOS_AVISO.map((m) => h('option', { value: m.valor, selected: m.valor === s.avisos ? true : null },
+        m.valor === s.avisos_por_defecto ? `${m.texto} (por defecto)` : m.texto)));
+    sel.addEventListener('focus', () => { ocupado = true; });
+    sel.addEventListener('blur', () => { ocupado = false; });
+    sel.addEventListener('change', async () => {
+      ocupado = false;
+      // Elegir el valor por defecto quita el ajuste del panel, así manda lo que diga servicio.json.
+      await guardarPanel({ id: s.id, avisos: sel.value === s.avisos_por_defecto ? '' : sel.value });
+      mostrarAviso(`Avisos de ${s.nombre}: ${MODOS_AVISO.find((m) => m.valor === sel.value).texto.toLowerCase()}`);
+      cargar();
+    });
+    return sel;
+  }
+
+  async function probarAviso(boton, s) {
+    boton.disabled = true;
+    try {
+      const r = await fetch('/api/avisar', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: s.id, titulo: 'prueba', texto: 'Aviso de prueba desde el panel KitDani.', prioridad: 2, tags: 'test_tube' }) });
+      const d = await r.json();
+      mostrarAviso(d.enviado ? 'Aviso de prueba enviado' : `No se envió: ${d.motivo || d.error}`, 5000);
+    } catch (e) {
+      mostrarAviso(`No se envió: ${e.message}`, 5000);
+    } finally {
+      boton.disabled = false;
+    }
+  }
+
   function editor(s) {
     const entrada = h('input', { class: 'campo', type: 'text', value: s.nombre, maxlength: '80', placeholder: s.nombre_original, 'aria-label': 'Nombre' });
     entrada.addEventListener('focus', () => { ocupado = true; });
@@ -191,6 +227,9 @@
     return h('div', { class: 'editor', onclick: (e) => e.stopPropagation() },
       h('label', { class: 'clave' }, 'Nombre'), entrada,
       h('span', { class: 'clave' }, 'Color'), h('span', { class: 'muestras' }, muestras),
+      h('label', { class: 'clave', title: 'Avisos al móvil por ntfy para este servicio' }, 'Avisos'), selectorAvisos(s),
+      h('button', { class: 'boton boton-suave', type: 'button', title: 'Manda un aviso de prueba al móvil en nombre de este servicio',
+        disabled: s.avisos === 'no' ? true : null, onclick: (e) => probarAviso(e.currentTarget, s) }, 'Probar'),
       s.nombre !== s.nombre_original ? h('span', { class: 'clave original' }, `Original: ${s.nombre_original}`) : null,
       h('span', { class: 'barra-hueco' }),
       s.importado ? h('button', { class: 'boton', type: 'button', title: 'git pull y vuelve a leer su kit.json', onclick: (e) => actualizarHerramienta(e.currentTarget, s) }, 'Actualizar') : null,
@@ -313,7 +352,7 @@
       },
     },
       h('span', { class: 'celda-punto', role: 'cell' }, asa, h('span', { class: 'punto', title: TEXTO_ESTADO[s.estado] })),
-      h('div', { class: 'celda-nombre', role: 'cell' }, h('div', { class: 'nombre' }, s.nombre), h('div', { class: 'tipo' }, s.tipo)),
+      h('div', { class: 'celda-nombre', role: 'cell' }, h('div', { class: 'nombre' }, s.nombre), h('div', { class: 'tipo' }, s.tipo, s.avisos === 'no' ? h('span', { class: 'sin-avisos', title: 'Sin avisos al móvil' }, ' · sin avisos') : null)),
       h('div', { class: 'estado', role: 'cell' }, h('span', { class: 'estado-texto' }, TEXTO_ESTADO[s.estado] || s.estado), h('span', { class: 'estado-mensaje', title: resumen }, resumen)),
       h('div', { class: 'indicadores', role: 'cell' }, s.indicadores.map((i) => h('span', { class: 'indicador' }, `${i.etiqueta} `, h('b', {}, i.valor)))),
       h('div', { class: 'acciones', role: 'cell' }, botones(s)),

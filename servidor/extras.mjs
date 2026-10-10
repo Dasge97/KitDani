@@ -96,17 +96,31 @@ export function marcarParadoAMano(id) {
   guardarAvisados();
 }
 
+// Modos de aviso por servicio (se eligen en el panel; por defecto, el "avisos" de su servicio.json o "caidas"):
+//   no      nunca avisa, ni de caídas ni de lo que mande la herramienta
+//   caidas  avisa cuando lleva un minuto en error o parado, y cuando vuelve
+//   todo    además avisa cuando pasa a "aviso" (p. ej. la bóveda bloqueada)
+// En los tres casos menos "no", la herramienta puede mandar sus propios avisos con POST /api/avisar.
+export const MODOS_AVISO = ['no', 'caidas', 'todo'];
+
 // Recibe la lista que devuelve estadoDeServicio y avisa de caídas y recuperaciones.
 export async function revisarAvisos(lista) {
   const ahora = Date.now();
   for (const s of lista) {
     if (s.estado === 'desconocido') continue;
-    const malo = MALOS.has(s.estado);
+    if (s.avisos === 'no') {
+      malDesde.delete(s.id);
+      if (avisados[s.id]) { delete avisados[s.id]; guardarAvisados(); }
+      continue;
+    }
+    const malo = MALOS.has(s.estado) || (s.avisos === 'todo' && s.estado === 'aviso');
     if (malo) {
       if (!malDesde.has(s.id)) malDesde.set(s.id, ahora);
       if (!avisados[s.id] && ahora - malDesde.get(s.id) >= MARGEN_MS) {
         const motivo = s.mensaje || s.detalles[0] || s.estado;
-        if (await enviarNtfy(`KitDani: ${s.nombre} ${s.estado === 'parado' ? 'parado' : 'con error'}`, motivo, { prioridad: 4, tags: 'rotating_light' })) {
+        const que = { parado: 'parado', error: 'con error', aviso: 'con aviso' }[s.estado];
+        const prioridad = s.estado === 'aviso' ? 3 : 4;
+        if (await enviarNtfy(`KitDani: ${s.nombre} ${que}`, motivo, { prioridad, tags: s.estado === 'aviso' ? 'warning' : 'rotating_light' })) {
           avisados[s.id] = 'caido';
           guardarAvisados();
         }
@@ -121,6 +135,22 @@ export async function revisarAvisos(lista) {
       }
     }
   }
+}
+
+// Aviso que manda la propia herramienta (POST /api/avisar). Límite: uno cada 10 s y 20 por hora por
+// servicio, para que un bucle con un fallo no llene el móvil.
+const enviosPorServicio = new Map();
+export async function avisoDeHerramienta(s, { titulo, texto, prioridad = 3, tags = '' }) {
+  if (s.avisos === 'no') return { enviado: false, motivo: 'Este servicio tiene los avisos desactivados en el panel' };
+  if (!NTFY_URL || !NTFY_TEMA) return { enviado: false, motivo: 'ntfy no está configurado en config.local.json' };
+  const ahora = Date.now();
+  const recientes = (enviosPorServicio.get(s.id) || []).filter((t) => ahora - t < 3_600_000);
+  if (recientes.length && ahora - recientes[recientes.length - 1] < 10_000) return { enviado: false, motivo: 'Demasiado seguido: espera 10 segundos' };
+  if (recientes.length >= 20) return { enviado: false, motivo: 'Límite de 20 avisos por hora alcanzado' };
+  const p = Math.min(5, Math.max(1, Number(prioridad) || 3));
+  const ok = await enviarNtfy(`${s.nombre}: ${String(titulo || 'Aviso').slice(0, 120)}`, String(texto || '').slice(0, 2000) || ' ', { prioridad: p, tags: String(tags || '').slice(0, 100) });
+  if (ok) { recientes.push(ahora); enviosPorServicio.set(s.id, recientes); }
+  return ok ? { enviado: true } : { enviado: false, motivo: 'ntfy no aceptó el aviso; mira registro.log' };
 }
 
 // ---------- Horarios de interruptores ----------

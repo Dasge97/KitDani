@@ -353,3 +353,8 @@ a.boton { text-decoration: none; display: inline-block; }
 .boton-peligro { color: var(--error); }
 .boton-peligro:hover { border-color: var(--error); }
 #importar-log { max-height: 260px; border: 1px solid var(--borde); border-radius: 6px; }
+
+/* ---------- Avisos por servicio ---------- */
+.campo-corto { width: auto; }
+select.campo { padding: 3px 6px; }
+.sin-avisos { color: var(--texto-tenue); }
