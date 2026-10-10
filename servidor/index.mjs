@@ -74,7 +74,11 @@ async function cicloRemoto() {
     const r = await comprobarRemotos(servicios);
     for (const [id, v] of r) chequeos.set(id, { ...v, comprobado: Date.now() });
     ultimaRemota = Date.now();
-    if (CONFIG.avisar_remotos !== false) await revisarAvisos(servicios.filter((s) => s.tipo === 'remoto').map(estadoDeServicio));
+    const modos = textoModos();
+    if (modos !== avisosSincronizados) await sincronizarAvisos();
+    // Los servicios con estado_remoto avisan desde el propio servidor (kit-estado), aunque el PC esté apagado.
+    // Aquí solo se avisa de los remotos que el PC comprueba por su cuenta (URL, contenedor).
+    if (CONFIG.avisar_remotos !== false) await revisarAvisos(servicios.filter((s) => s.tipo === 'remoto' && !s.comprobar.estado_remoto).map(estadoDeServicio));
   } catch (e) {
     anotar(`Fallo en el ciclo remoto: ${e.message}`);
   } finally {
@@ -214,6 +218,32 @@ function estadoCompleto() {
   };
 }
 
+// ---------- Modos de aviso en los servidores ----------
+// Copia a cada servidor de la sección remota el modo de avisos de todos los servicios (~/kit/avisos.json),
+// para que kit-estado y kit-avisar respeten lo que se elige en el panel. Si el servidor no responde, se
+// reintenta en el siguiente ciclo remoto.
+let avisosSincronizados = '';
+function textoModos() {
+  return `${JSON.stringify(Object.fromEntries(servicios.map((s) => [s.id, estadoDeServicio(s).avisos])), null, 2)}\n`;
+}
+async function sincronizarAvisos() {
+  const texto = textoModos();
+  const hosts = [...new Set(servicios.filter((s) => s.tipo === 'remoto' && s.comprobar.host).map((s) => s.comprobar.host))];
+  let todosOk = true;
+  for (const host of hosts) {
+    const ok = await new Promise((resolver) => {
+      const hijo = spawn('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=8', host,
+        'mkdir -p ~/kit && cat > ~/kit/avisos.json.tmp && mv ~/kit/avisos.json.tmp ~/kit/avisos.json'], { windowsHide: true });
+      const reloj = setTimeout(() => { hijo.kill(); resolver(false); }, 20_000);
+      hijo.on('error', () => { clearTimeout(reloj); resolver(false); });
+      hijo.on('close', (codigo) => { clearTimeout(reloj); resolver(codigo === 0); });
+      hijo.stdin.end(texto);
+    });
+    if (!ok) { todosOk = false; anotar(`no se pudieron copiar los modos de aviso a ${host}`); }
+  }
+  if (todosOk) avisosSincronizados = texto;
+}
+
 // ---------- Ajustes del panel (panel.json) ----------
 // Lo que se cambia desde la página y no es de la herramienta: nombre visible, color y orden.
 // Va aparte de servicio.json para que Claude pueda reescribir servicio.json sin pisarlo.
@@ -246,6 +276,7 @@ function cambiarPanel({ orden, id, nombre, color, avisos }) {
     if (Object.keys(a).length) p.servicios[id] = a; else delete p.servicios[id];
   }
   escribirJsonAtomico(FICHERO_PANEL, p);
+  if (avisos !== undefined) sincronizarAvisos();
   return p;
 }
 

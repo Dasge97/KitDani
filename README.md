@@ -86,6 +86,31 @@ cómo saber si está en marcha y cómo arrancarla.
 
 Tras cambiarla, pulsa **Reiniciar** en el panel.
 
+## En un servidor
+
+Lo que corre en un servidor Linux también puede informar al Kit y avisar al móvil, aunque el PC
+esté apagado. La carpeta `remoto/` instala tres comandos en `~/bin` del servidor:
+
+| Comando | Para qué |
+|---|---|
+| `kit-estado <id> <ok/aviso/error/parado> <mensaje> [-i "Etiqueta=valor"]` | Deja el estado en `~/kit/estado/<id>.json` y avisa si pasa a error y cuando vuelve |
+| `kit-avisar <id> <título> [texto] [-p prioridad]` | Manda un aviso suelto |
+| `kit-kuma` | Lee Uptime Kuma y avisa cuando una de sus webs cae o vuelve. Para cron |
+
+Instalación:
+
+```bash
+scp remoto/kit.py remoto/instalar.sh servidor:/tmp/
+ssh servidor 'bash /tmp/instalar.sh https://ntfy.example.com mi-tema'
+# El token de ntfy, aparte y sin pasarlo como argumento:
+ssh servidor 'umask 077; cat > ~/.config/kit/ntfy-token' < fichero-con-el-token
+```
+
+En el Kit del PC, el servicio se registra como `remoto` con `comprobar.host` y
+`comprobar.estado_remoto` apuntando a `~/kit/estado/<id>.json` (ruta absoluta). El Kit del PC copia
+al servidor el modo de avisos de cada servicio, así que silenciar uno en el panel lo silencia también
+allí. De los servicios con `estado_remoto` avisa el servidor, no el PC, para no repetir avisos.
+
 ## Personalizar la tabla
 
 - Clic en una fila para desplegar su detalle. Arriba se cambia el nombre visible y el color.
@@ -120,6 +145,7 @@ servidor/importar.mjs    importar, actualizar y quitar herramientas con kit.json
 servidor/extras.mjs      parar procesos, avisos por ntfy y horarios de interruptores
 servidor/servicios.mjs   lectura de servicios, variables {dir} {kit} %VAR%, interruptores
 servidor/config.mjs      configuración y config.local.json
+remoto/                  kit-estado, kit-avisar y kit-kuma para un servidor Linux
 web/                     la página (HTML, CSS y JS sin frameworks)
 docs/kit-json.md         formato para que una herramienta se pueda importar
 docs/servicio-del-kit.md tipos, servicio.json, estado.json, interruptores

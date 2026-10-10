@@ -204,6 +204,12 @@ async function comprobarRemoto(s) {
       if (c.estado_remoto && cuerpo.trim()) {
         try { estadoRemoto = JSON.parse(cuerpo); } catch { detalles.push('estado.json remoto no es JSON válido'); }
       }
+      // Sin URL ni contenedor, el estado lo decide solo su estado.json: la conexión ha ido bien, así que
+      // la comprobación no añade nada malo. Si el fichero aún no existe, se dice.
+      if (c.estado_remoto && !c.url && !c.contenedor) {
+        if (estadoRemoto) estado = 'ok';
+        else if (!cuerpo.trim()) detalles.push('Todavía no ha informado de su estado');
+      }
     } catch (e) {
       detalles.push(`Sin conexión SSH con ${c.host}`);
       if (estado === 'desconocido') estado = 'aviso';
