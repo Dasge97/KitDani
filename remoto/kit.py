@@ -208,7 +208,10 @@ def cmd_kuma(a):
     primera_vez = not os.path.exists(ruta_prev)
     previas = set(leer_json(ruta_prev, []))
     nuevas = [w for w in caidas if w not in previas]
-    vueltas = sorted(previas - set(caidas))
+    # Solo cuenta como vuelta una web que sigue vigilada y responde. Si se pausa o se borra en Uptime
+    # Kuma, desaparece de la lista sin aviso.
+    en_marcha = {w['name'] for w in webs if w.get('status') == 1}
+    vueltas = sorted((previas - set(caidas)) & en_marcha)
     escribir_json(ruta_prev, caidas)
 
     if not primera_vez and modo(a.id) != 'no':
