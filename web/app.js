@@ -498,5 +498,11 @@
   });
 
   document.addEventListener('visibilitychange', () => { if (!document.hidden) cargar(); });
+
+  // Enlaces directos: #detalle=<id> abre el detalle de ese servicio; #importar abre el diálogo de importar.
+  const enlace = new URLSearchParams(location.hash.slice(1));
+  if (enlace.get('detalle')) abiertos.add(enlace.get('detalle'));
+  if (enlace.has('importar')) $('#btn-importar').click();
+
   cargar();
 })();

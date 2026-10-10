@@ -1,5 +1,7 @@
 # kit.json: cómo hacer que una herramienta se pueda importar en KitDani
 
+[English](kit-json.en.md) · **Español**
+
 Cualquier herramienta que tenga un fichero `kit.json` en la raíz de su carpeta (o de su
 repositorio de git) se puede importar en KitDani con el botón **Importar**. El panel la clona si
 hace falta, comprueba sus requisitos, ejecuta su instalador y la empieza a vigilar.

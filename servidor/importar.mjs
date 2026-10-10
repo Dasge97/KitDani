@@ -72,7 +72,8 @@ function registrar(carpeta, fuente, kit) {
     if (s.estado_ruta) {
       const destino = expandir(s.estado_ruta, variables({ carpeta }));
       const estado = path.join(DIR_SERVICIOS, s.id, 'estado.json').replaceAll('\\', '/');
-      try { fs.writeFileSync(destino, `${estado}\n`, 'utf8'); } catch (e) { anotar(`${s.id}: no se pudo escribir ${destino}: ${e.message}`); }
+      // La carpeta puede no existir todavía si la crea el instalador de la herramienta (que corre después).
+      try { fs.mkdirSync(path.dirname(destino), { recursive: true }); fs.writeFileSync(destino, `${estado}\n`, 'utf8'); } catch (e) { anotar(`${s.id}: no se pudo escribir ${destino}: ${e.message}`); }
     }
     escribirJsonAtomico(path.join(DIR_SERVICIOS, s.id, 'servicio.json'), {
       ...s,
