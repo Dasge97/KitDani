@@ -108,8 +108,10 @@ function programarRecheck(ms = 3000, remoto = false) {
 }
 
 // Un demonio sin "parar" propio se puede parar matando su proceso (o el que escucha en su puerto).
+// Con "parar": false en sus acciones, no tiene botón Parar (p. ej. una app de escritorio con trabajo abierto).
 function puedePararSolo(s) {
-  return s.tipo === 'demonio' && s.id !== ID_PROPIO && !s.acciones.parar && Boolean(s.comprobar.proceso_contiene || s.comprobar.puerto);
+  return s.tipo === 'demonio' && s.id !== ID_PROPIO && s.acciones.parar !== false && !s.acciones.parar
+    && Boolean(s.comprobar.proceso_contiene || s.comprobar.puerto);
 }
 
 function duracionCorta(ms) {

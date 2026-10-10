@@ -130,9 +130,10 @@ Se declara en la lista `interruptores`:
 - `acciones.extra`: lista de botones propios. Cada uno con `id`, `etiqueta`, `comando` y,
   opcional, `si`: `"bloqueada"` o `"desbloqueada"` para enseñarlo solo según `sesion_remota`.
   Un comando que necesite que el usuario escriba algo abre su propia ventana de terminal con `start`.
-- Un `demonio` sin `acciones.parar` tiene botón Parar igualmente: el panel mata el proceso de
+- Un `demonio` sin `acciones.parar` (o con `null`) tiene botón Parar igualmente: el panel mata el proceso de
   `proceso_contiene` y el que escucha en `puerto`. Si tiene `tarea_windows`, además desactiva la tarea
-  para que no lo relance, y "Arrancar" la vuelve a activar.
+  para que no lo relance, y "Arrancar" la vuelve a activar. Con `"parar": false` no hay botón Parar:
+  para programas de escritorio con trabajo abierto, que no conviene cerrar de golpe.
 
 ## Cómo lo enseña y lo vigila el panel
 
