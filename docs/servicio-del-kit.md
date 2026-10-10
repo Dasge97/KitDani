@@ -63,7 +63,7 @@ hay que escapar nada. Se pueden usar las variables `{dir}`, `{kit}` y `%VAR%`, d
 - `comprobar` depende del tipo. Claves admitidas:
   - `demonio`: `proceso_contiene` (texto que aparece en la línea de comando del proceso), `puerto` (número), `tarea_windows` (nombre de la tarea que lo relanza, si la hay).
   - `tarea`: `tarea_windows` (nombre exacto en el Programador de tareas).
-  - `hook`: `ficheros` (lista de rutas que deben existir), `fichero_contiene` (objeto `{ "fichero": ruta, "texto": cadena }`).
+  - `hook`: `ficheros` (lista de rutas que deben existir), `fichero_contiene` (objeto `{ "fichero": ruta, "texto": cadena }`), `proceso_contiene` (opcional: el programa que aloja el hook tiene que estar abierto; si no, sale como parado).
   - `contenedor`: `compose` (ruta del docker-compose.yml), `proyecto_compose` (nombre del proyecto, el `-p`).
   - `remoto`: `host` (alias de SSH), `url` (dirección que debe responder 200), `contenedor` (nombre del contenedor docker en el servidor), `estado_remoto` (ruta en el servidor del `estado.json`, por ejemplo `~/kit/estado/<id>.json`). Opcional `sesion_remota`: fichero cuya primera línea es una hora de caducidad en segundos Unix; el panel enseña si está abierta y cuánto le queda.
 - `caducidad_minutos`: si `estado.json` lleva más minutos sin actualizarse, el panel lo pinta como "sin noticias". `null` si la herramienta no escribe `estado.json` de forma periódica.
