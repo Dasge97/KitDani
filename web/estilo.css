@@ -1,0 +1,355 @@
+:root {
+  /* Tema único, oscuro. El fondo es el mismo color que el fondo del icono (assets/icono.png). */
+  --fondo: #0f151a;
+  --superficie: #161d23;
+  --borde: #242c34;
+  --texto: #e4e7ec;
+  --texto-suave: #9aa1ae;
+  --texto-tenue: #6b7280;
+  --acento: #7da2f0;
+  --ok: #46b36f;
+  --aviso: #d8ab1f;
+  --error: #e05656;
+  --parado: #767c88;
+  --desconocido: #454a55;
+  --fila-hover: #1c242b;
+  --opacidad-fondo: .2;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+
+body {
+  background: var(--fondo);
+  color: var(--texto);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding: 0 16px 32px;
+  min-height: 100vh;
+}
+
+/* Icono del Kit en grande, fijo y tenue, detrás de la tabla. */
+body::before {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  /* Ocupa todo el alto bajo la barra (44px) con un pequeño margen; "contain" mantiene la proporción. */
+  left: 0; right: 0;
+  top: calc(44px + 12px); bottom: 12px;
+  background: url("iconos/fondo.png") center / contain no-repeat;
+  opacity: var(--opacidad-fondo, .07);
+  pointer-events: none;
+}
+.barra, .contenido, .modal, .aviso { position: relative; z-index: 1; }
+.barra { position: sticky; }
+.modal, .aviso { position: fixed; }
+
+/* ---------- Barra fija del Kit ---------- */
+
+.barra {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 44px;
+  margin: 0 -16px 18px;
+  padding: 0 16px;
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
+  font-size: 13px;
+}
+.barra-titulo { font-weight: 700; font-size: 15px; letter-spacing: .2px; }
+.barra-estado { color: var(--texto-suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barra-estado b { color: var(--texto); font-weight: 600; }
+.barra-estado .mal { color: var(--error); font-weight: 600; }
+.barra-hueco { flex: 1; }
+.barra-reloj { color: var(--texto-tenue); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ---------- Botones ---------- */
+
+.boton {
+  appearance: none;
+  border: 1px solid var(--borde);
+  background: transparent;
+  color: var(--texto);
+  border-radius: 6px;
+  padding: 4px 9px;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.3;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.boton:hover { border-color: var(--texto-tenue); background: var(--fila-hover); }
+.boton:disabled { opacity: .5; cursor: default; }
+.boton-suave { border-color: transparent; }
+a.boton { text-decoration: none; display: inline-block; }
+
+/* ---------- Tabla ---------- */
+
+.contenido { max-width: 1240px; margin: 0 auto; }
+
+/* La tabla es una rejilla y cada fila hereda sus columnas (subgrid), así todas quedan alineadas
+   aunque el ancho de los botones cambie de una fila a otra. */
+.tabla {
+  display: grid;
+  /* Anchos fijos en la primera, segunda y última columna para que las tablas de cada sección queden alineadas. */
+  grid-template-columns: 34px 230px minmax(0, 1.4fr) minmax(0, 1fr) 430px;
+  /* algo translúcida para que se vea el icono de fondo a través de la tabla */
+  background: color-mix(in srgb, var(--superficie) 55%, transparent);
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.tabla > [role="rowgroup"] { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; }
+.contenido { max-width: none; }
+.seccion { max-width: 1240px; margin: 0 auto; }
+
+.fila {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  gap: 0 14px;
+  align-items: center;
+  padding: 9px 14px;
+  border-top: 1px solid var(--borde);
+  min-width: 0;
+}
+.fila > * { min-width: 0; }
+.fila-cabecera {
+  border-top: 0;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--texto-tenue);
+  background: color-mix(in srgb, var(--texto-tenue) 6%, transparent);
+}
+.fila-servicio { cursor: pointer; }
+.fila-servicio:hover { background: color-mix(in srgb, var(--fila-hover) 70%, transparent); }
+.fila-servicio[aria-expanded="true"] { background: color-mix(in srgb, var(--fila-hover) 70%, transparent); }
+
+.punto {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--color-estado, var(--desconocido));
+  justify-self: center;
+}
+[data-estado="ok"] { --color-estado: var(--ok); }
+[data-estado="aviso"] { --color-estado: var(--aviso); }
+[data-estado="error"] { --color-estado: var(--error); }
+[data-estado="parado"] { --color-estado: var(--parado); }
+[data-estado="desconocido"] { --color-estado: var(--desconocido); }
+
+.nombre { font-weight: 600; line-height: 1.25; }
+.tipo { color: var(--texto-tenue); font-size: 12px; }
+
+.estado { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.estado-texto { color: var(--color-estado); font-weight: 600; font-size: 12px; margin-right: 8px; }
+.estado-mensaje { color: var(--texto-suave); }
+
+.indicadores { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; }
+.indicador { white-space: nowrap; color: var(--texto-suave); }
+.indicador b { color: var(--texto); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.acciones { display: flex; align-items: center; gap: 6px; justify-self: end; }
+
+/* interruptor pequeño */
+.interruptor {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12.5px; color: var(--texto-suave);
+  cursor: pointer; user-select: none;
+  padding: 2px 4px;
+}
+.interruptor input { position: absolute; opacity: 0; pointer-events: none; }
+.palanca {
+  width: 30px; height: 17px; border-radius: 999px;
+  background: var(--parado); position: relative; flex: none;
+  transition: background .15s;
+}
+.palanca::after {
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 13px; height: 13px; border-radius: 50%; background: #fff;
+  transition: left .15s;
+}
+.interruptor input:checked + .palanca { background: var(--ok); }
+.interruptor input:checked + .palanca::after { left: 15px; }
+.interruptor.ocupado { opacity: .5; pointer-events: none; }
+
+/* detalle desplegable */
+.detalle {
+  display: none;
+  grid-column: 1 / -1;
+  padding: 2px 14px 12px 50px;
+  color: var(--texto-suave);
+  font-size: 12.5px;
+  border-top: 0;
+}
+.detalle.abierto { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 28px; }
+.detalle p { margin: 0; }
+.detalle ul { margin: 0; padding: 0; list-style: none; }
+.detalle li::before { content: "· "; color: var(--texto-tenue); }
+.detalle .ruta { font-family: ui-monospace, Consolas, monospace; font-size: 12px; overflow-wrap: anywhere; }
+.detalle .clave { color: var(--texto-tenue); }
+
+.vacio { color: var(--texto-suave); padding: 32px 14px; text-align: center; }
+
+/* ---------- Modal y aviso ---------- */
+
+.modal {
+  position: fixed; inset: 0; z-index: 10;
+  background: rgba(0, 0, 0, .5);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.modal-caja {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  width: min(900px, 100%);
+  max-height: 90vh;
+  display: flex; flex-direction: column;
+}
+.modal-cabecera { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px 0; }
+.modal-cabecera h2 { margin: 0; font-size: 15px; }
+.modal-sub { margin: 2px 14px 8px; color: var(--texto-tenue); font-size: 12px; overflow-wrap: anywhere; }
+.modal-texto {
+  margin: 0; padding: 10px 14px 14px;
+  overflow: auto;
+  font: 12px/1.5 ui-monospace, Consolas, "Cascadia Mono", monospace;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+  border-top: 1px solid var(--borde);
+}
+
+.aviso {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+  background: var(--texto); color: var(--fondo);
+  padding: 8px 14px; border-radius: 6px;
+  font-size: 12.5px; max-width: calc(100% - 32px); z-index: 20;
+}
+
+.oculto { display: none !important; }
+
+/* ---------- Pantallas estrechas ---------- */
+
+@media (max-width: 820px) {
+  .fila-cabecera { display: none; }
+  .fila-servicio {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "punto nombre acciones"
+      ".     estado estado"
+      ".     indicadores indicadores";
+    gap: 3px 10px;
+    align-items: start;
+  }
+  .fila-servicio .celda-punto { grid-area: punto; margin-top: 4px; }
+  .fila-servicio .celda-nombre { grid-area: nombre; }
+  .fila-servicio .estado { grid-area: estado; white-space: normal; }
+  .fila-servicio .indicadores { grid-area: indicadores; }
+  .fila-servicio .acciones { grid-area: acciones; flex-wrap: wrap; justify-content: flex-end; }
+  .detalle { padding-left: 46px; }
+  .detalle.abierto { grid-template-columns: 1fr; }
+  .barra-reloj { display: none; }
+}
+
+/* ---------- Color por servicio, asa de arrastre y editor ---------- */
+
+.fila-servicio { position: relative; }
+.fila-servicio.con-color { box-shadow: inset 3px 0 0 var(--color-servicio); }
+.fila-servicio.con-color .nombre { color: color-mix(in srgb, var(--color-servicio) 55%, var(--texto)); }
+
+.celda-punto { display: flex; align-items: center; gap: 4px; }
+.celda-punto .punto { flex: none; }
+.asa {
+  cursor: grab;
+  color: var(--texto-tenue);
+  font-size: 11px;
+  letter-spacing: -2px;
+  line-height: 1;
+  opacity: 0;
+  padding: 4px 2px;
+  user-select: none;
+  transition: opacity .1s;
+}
+.fila-servicio:hover .asa { opacity: 1; }
+.asa:active { cursor: grabbing; }
+.fila-servicio.arrastrando { opacity: .45; }
+
+.editor {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--borde);
+  margin-bottom: 2px;
+}
+.campo {
+  background: color-mix(in srgb, var(--fondo) 70%, transparent);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  color: var(--texto);
+  font: inherit; font-size: 13px;
+  padding: 4px 8px;
+  width: 240px; max-width: 100%;
+}
+.campo:focus { outline: none; border-color: var(--acento); }
+.muestras { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.muestra {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--muestra);
+  padding: 0; cursor: pointer;
+  box-shadow: 0 0 0 1px var(--borde);
+}
+.muestra.elegida { border-color: var(--texto); }
+.muestra-nada { background: transparent; position: relative; }
+.muestra-nada::after {
+  content: ""; position: absolute; inset: 6px -1px;
+  border-top: 2px solid var(--texto-tenue); transform: rotate(-45deg);
+}
+.editor .original { font-size: 12px; }
+
+/* ---------- Secciones y horario ---------- */
+
+.fila-seccion {
+  padding-top: 14px; padding-bottom: 6px;
+  font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--texto-suave);
+  background: color-mix(in srgb, var(--fondo) 55%, transparent);
+}
+.fila-seccion > span:nth-child(2) { grid-column: 2 / -1; }
+.seccion-titulo { font-weight: 700; }
+.seccion-cuenta { font-weight: 400; color: var(--texto-tenue); text-transform: none; letter-spacing: 0; }
+.horario {
+  font-size: 11px; color: var(--texto-tenue);
+  border: 1px solid var(--borde); border-radius: 4px; padding: 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Barra propia de cada servidor remoto (Codehive) ---------- */
+/* Misma apariencia que la barra de KitDani, a todo el ancho, justo después de la tabla de este PC. */
+.barra.barra-seccion {
+  position: relative;
+  top: auto;
+  margin: 32px -16px 18px;
+  border-top: 1px solid var(--borde);
+  width: auto;
+}
+.seccion-remota { max-width: none; }
+.seccion-remota > .tabla { max-width: 1240px; margin: 0 auto; }
+
+/* ---------- Importar, equipo, quitar ---------- */
+.barra-equipo { color: var(--texto-tenue); font-size: 12px; border: 1px solid var(--borde); border-radius: 4px; padding: 0 6px; }
+.barra-equipo:empty { display: none; }
+.modal-form { width: min(640px, 100%); }
+.form-cuerpo { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px; }
+.campo-ancho { width: 100%; }
+.casilla { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--texto-suave); }
+.nota { margin: 0; font-size: 12px; color: var(--texto-tenue); }
+.form-botones { display: flex; justify-content: flex-end; }
+.boton-principal { background: var(--acento); border-color: var(--acento); color: #0f151a; font-weight: 600; }
+.boton-principal:hover { background: var(--acento); filter: brightness(1.1); }
+.boton-peligro { color: var(--error); }
+.boton-peligro:hover { border-color: var(--error); }
+#importar-log { max-height: 260px; border: 1px solid var(--borde); border-radius: 6px; }

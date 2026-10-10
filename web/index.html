@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>KitDani</title>
+  <meta name="theme-color" content="#0f151a">
+  <meta name="application-name" content="KitDani">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="64x64" href="iconos/favicon-64.png">
+  <link rel="apple-touch-icon" href="iconos/icono-192.png">
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+  <header class="barra">
+    <span class="barra-titulo">KitDani</span>
+    <span id="barra-equipo" class="barra-equipo"></span>
+    <span id="barra-estado" class="barra-estado">Cargando…</span>
+    <span class="barra-hueco"></span>
+    <span id="barra-reloj" class="barra-reloj"></span>
+    <button id="btn-importar" class="boton" type="button" title="Añadir una herramienta que tenga kit.json">Importar</button>
+    <button id="btn-comprobar" class="boton" type="button">Comprobar</button>
+    <button id="btn-reiniciar" class="boton boton-suave" type="button" title="Para el servidor del Kit, lo vuelve a arrancar y recarga la página">Reiniciar</button>
+  </header>
+
+  <main class="contenido">
+    <div id="secciones"></div>
+  </main>
+
+  <div id="modal" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+    <div class="modal-caja">
+      <div class="modal-cabecera">
+        <h2 id="modal-titulo"></h2>
+        <button id="modal-cerrar" class="boton boton-suave" type="button" aria-label="Cerrar">✕</button>
+      </div>
+      <p id="modal-sub" class="modal-sub"></p>
+      <pre id="modal-texto" class="modal-texto"></pre>
+    </div>
+  </div>
+
+  <div id="modal-importar" class="modal oculto" role="dialog" aria-modal="true" aria-labelledby="importar-titulo">
+    <form id="form-importar" class="modal-caja modal-form">
+      <div class="modal-cabecera">
+        <h2 id="importar-titulo">Importar herramienta</h2>
+        <button id="importar-cerrar" class="boton boton-suave" type="button" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="form-cuerpo">
+        <label class="clave" for="importar-fuente">URL de git o carpeta local con un kit.json</label>
+        <input id="importar-fuente" class="campo campo-ancho" type="text" required autocomplete="off"
+               placeholder="https://github.com/usuario/herramienta.git  o  C:/ruta/a/la/herramienta">
+        <label class="casilla"><input id="importar-instalar" type="checkbox" checked> Ejecutar su instalador después de registrarla</label>
+        <p class="nota">El instalador es código de esa herramienta y se ejecuta en este PC. Importa solo herramientas en las que confíes.</p>
+        <div class="form-botones">
+          <button id="importar-enviar" class="boton boton-principal" type="submit">Importar</button>
+        </div>
+        <pre id="importar-log" class="modal-texto oculto"></pre>
+      </div>
+    </form>
+  </div>
+
+  <div id="aviso" class="aviso oculto" role="status"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

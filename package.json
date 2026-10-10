@@ -1,0 +1,13 @@
+{
+  "name": "kitdani",
+  "version": "0.1.0",
+  "description": "Panel local para ver y manejar los servicios del Kit.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node servidor/index.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

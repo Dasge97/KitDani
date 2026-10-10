@@ -1,0 +1,8 @@
+# Datos de cada PC: no van al repositorio
+config.local.json
+servicios/
+panel.json
+registro.log
+registro.log.1
+*.tmp
+node_modules/
