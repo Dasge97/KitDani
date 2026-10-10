@@ -103,10 +103,18 @@ function comprobarTarea(s, datos) {
   return tareaATexto(t);
 }
 
-function comprobarHook(s) {
+function comprobarHook(s, datos) {
   const c = s.comprobar;
   const detalles = [];
   let estado = 'ok';
+  // proceso_contiene (opcional): el programa que aloja el hook tiene que estar abierto (p. ej. Rainmeter).
+  if (c.proceso_contiene) {
+    const patron = normalizarRuta(c.proceso_contiene);
+    if (!datos.procesos.some((p) => normalizarRuta(p.CommandLine).includes(patron))) {
+      estado = 'parado';
+      detalles.push(`${c.proceso_contiene} no está abierto`);
+    }
+  }
   for (const f of lista(c.ficheros)) {
     if (!fs.existsSync(f)) { estado = 'error'; detalles.push(`Falta ${f}`); }
   }
@@ -118,7 +126,7 @@ function comprobarHook(s) {
       estado = 'error'; detalles.push(`No se puede leer ${fichero}`);
     }
   }
-  if (estado === 'ok') detalles.push('Instalado');
+  if (estado === 'ok') detalles.push(c.proceso_contiene ? 'Instalado y en marcha' : 'Instalado');
   return { estado, detalles, indicadores: [] };
 }
 
@@ -215,7 +223,7 @@ export async function comprobarLocales(servicios) {
   let necesitaProcesos = false;
   for (const s of locales) {
     if (s.tipo === 'tarea' && s.comprobar.tarea_windows) tareas.push(s.comprobar.tarea_windows);
-    if (s.tipo === 'demonio' && s.comprobar.proceso_contiene) necesitaProcesos = true;
+    if ((s.tipo === 'demonio' || s.tipo === 'hook') && s.comprobar.proceso_contiene) necesitaProcesos = true;
   }
   let datos = { procesos: [], tareas: [] };
   if (tareas.length || necesitaProcesos) {
@@ -235,7 +243,7 @@ export async function comprobarLocales(servicios) {
         const puertoVivo = s.comprobar.puerto ? await puertoAbierto(s.comprobar.puerto) : false;
         resultados.set(s.id, comprobarDemonio(s, datos, puertoVivo));
       } else if (s.tipo === 'tarea') resultados.set(s.id, comprobarTarea(s, datos));
-      else if (s.tipo === 'hook') resultados.set(s.id, comprobarHook(s));
+      else if (s.tipo === 'hook') resultados.set(s.id, comprobarHook(s, datos));
       else if (s.tipo === 'contenedor') resultados.set(s.id, await comprobarContenedor(s));
     } catch (e) {
       resultados.set(s.id, { estado: 'desconocido', detalles: [`Error al comprobar: ${e.message}`], indicadores: [] });
