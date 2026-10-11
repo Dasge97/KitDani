@@ -98,7 +98,7 @@ A package with several services lists them: `"servicios": [ { ... }, { ... } ]`.
 | `tipo` | How it is checked: `demonio` (always-running process), `tarea` (Windows scheduled task), `hook` (code inside another program), `contenedor` (local docker compose), `remoto` (runs on a server) |
 | `proyecto` | Folder opened by the **Carpeta** button. Usually `{dir}` |
 | `comprobar` | What to check. Keys per type are listed below |
-| `acciones` | `arrancar` (start), `parar` (stop; `false` hides the Stop button that the Kit otherwise adds to every `demonio`), `abrir` (URL or path to open), `extra` (custom buttons) |
+| `acciones` | `arrancar` (start), `parar` (stop; `false` hides the Stop button that the Kit otherwise adds to every `demonio`), `abrir` (URL or path to open), `extra` (custom buttons; with `entrada` the panel asks for a value, such as a password, in its own dialog and passes it to the command on stdin) |
 | `registro` | Log file shown by the **Registro** button |
 | `caducidad_minutos` | If `estado.json` is older than this, the row turns to warning |
 | `interruptores` | Switches the panel can flip: a file holding `encendido` or `apagado`, optional `horario` |

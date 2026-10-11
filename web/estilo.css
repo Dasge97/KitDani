@@ -358,3 +358,5 @@ a.boton { text-decoration: none; display: inline-block; }
 .campo-corto { width: auto; }
 select.campo { padding: 3px 6px; }
 .sin-avisos { color: var(--texto-tenue); }
+
+.nota.mal { color: var(--error); }

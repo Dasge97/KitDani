@@ -83,6 +83,51 @@
     }
   }
 
+  // Acción que pide un dato antes de ejecutarse (p. ej. la contraseña maestra para desbloquear la bóveda).
+  // El dato va directo al servidor del Kit, que lo pasa al comando por su entrada estándar. No se guarda.
+  function pedirDato(s, accionExtra) {
+    const cfg = accionExtra.entrada;
+    const campo = h('input', {
+      class: 'campo campo-ancho', type: cfg.secreta ? 'password' : 'text', required: true,
+      autocomplete: cfg.secreta ? 'off' : null, spellcheck: 'false', 'aria-label': cfg.etiqueta || 'Dato',
+    });
+    const mensaje = h('p', { class: 'nota' }, cfg.ayuda || '');
+    const enviar = h('button', { class: 'boton boton-principal', type: 'submit' }, accionExtra.etiqueta);
+    const cerrar = () => { campo.value = ''; fondo.remove(); };
+    const formulario = h('form', { class: 'modal-caja modal-form' },
+      h('div', { class: 'modal-cabecera' },
+        h('h2', {}, `${accionExtra.etiqueta}: ${s.nombre}`),
+        h('button', { class: 'boton boton-suave', type: 'button', 'aria-label': 'Cerrar', onclick: cerrar }, '✕')),
+      h('div', { class: 'form-cuerpo' },
+        h('label', { class: 'clave' }, cfg.etiqueta || 'Dato'), campo, mensaje,
+        h('div', { class: 'form-botones' }, enviar)));
+    const fondo = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true' }, formulario);
+    fondo.addEventListener('click', (e) => { if (e.target === fondo) cerrar(); });
+    fondo.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(); });
+    formulario.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      enviar.disabled = true; enviar.textContent = 'Un momento…';
+      mensaje.classList.remove('mal');
+      try {
+        const r = await fetch('/api/accion', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: s.id, accion: accionExtra.id, entrada: campo.value }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+        cerrar();
+        mostrarAviso(d.salida || `${accionExtra.etiqueta}: hecho`, 5000);
+        cargar();
+      } catch (err) {
+        campo.value = '';
+        campo.focus();
+        mensaje.textContent = err.message.replace(/^vault:\s*/, '');
+        mensaje.classList.add('mal');
+        enviar.disabled = false; enviar.textContent = accionExtra.etiqueta;
+      }
+    });
+    document.body.append(fondo);
+    campo.focus();
+  }
+
   async function verRegistro(servicio) {
     try {
       const r = await api(`/api/registro?id=${encodeURIComponent(servicio.id)}`);
@@ -122,7 +167,7 @@
       // Sin datos de la sesión todavía (codehive aún sin comprobar) se ofrece Desbloquear.
       if (x.si === 'bloqueada' && s.sesion?.abierta === true) continue;
       if (x.si === 'desbloqueada' && !s.sesion?.abierta) continue;
-      lista.push(h('button', { class: 'boton', type: 'button', onclick: parar((e) => ejecutarAccion(e.currentTarget, s, x.id)) }, x.etiqueta));
+      lista.push(h('button', { class: 'boton', type: 'button', onclick: parar((e) => (x.entrada ? pedirDato(s, x) : ejecutarAccion(e.currentTarget, s, x.id))) }, x.etiqueta));
     }
     if (s.acciones.arrancar) lista.push(h('button', { class: 'boton', type: 'button', onclick: parar((e) => ejecutarAccion(e.currentTarget, s, 'arrancar')) }, s.estado === 'ok' ? 'Relanzar' : 'Arrancar'));
     if (s.acciones.parar && s.estado !== 'parado') lista.push(h('button', { class: 'boton', type: 'button', onclick: parar((e) => {

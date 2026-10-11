@@ -184,7 +184,7 @@ function estadoDeServicio(s) {
     acciones: {
       arrancar: Boolean(s.acciones.arrancar),
       parar: Boolean(s.acciones.parar) || puedePararSolo(s),
-      extra: (Array.isArray(s.acciones.extra) ? s.acciones.extra : []).map((x) => ({ id: x.id, etiqueta: x.etiqueta || x.id, si: x.si || null })),
+      extra: (Array.isArray(s.acciones.extra) ? s.acciones.extra : []).map((x) => ({ id: x.id, etiqueta: x.etiqueta || x.id, si: x.si || null, entrada: x.entrada || null })),
       abrir: s.acciones.abrir || null,
       carpeta: Boolean(s.proyecto),
       registro: Boolean(s.registro),
@@ -292,7 +292,7 @@ function ejecutar(comando, cwd) {
   });
 }
 
-async function accion(id, nombre) {
+async function accion(id, nombre, entrada) {
   const s = servicios.find((x) => x.id === id);
   if (!s) return { estado: 404, cuerpo: { error: `No existe el servicio ${id}` } };
   let comando = null;
@@ -316,12 +316,32 @@ async function accion(id, nombre) {
   if (!comando) return { estado: 400, cuerpo: { error: `El servicio ${id} no tiene la acción ${nombre}` } };
   anotar(`acción ${nombre} en ${id}: ${comando}`);
   if (nombre === 'parar') marcarParadoAMano(s.id);
+  // Acción que pide un dato (p. ej. la contraseña maestra): va por la entrada estándar del comando,
+  // nunca por la línea de comandos, y no se anota en ningún registro.
+  if (extra?.entrada) {
+    if (typeof entrada !== 'string' || !entrada) return { estado: 400, cuerpo: { error: `Falta ${extra.entrada.etiqueta || 'el dato'}` } };
+    const r = await ejecutarConEntrada(comando, entrada, s.proyecto);
+    if (!r.ok) anotar(`  falló: ${r.salida.split('\n').pop()}`);
+    if (s.tipo === 'remoto') { await cicloRemoto(); }
+    return { estado: r.ok ? 200 : 400, cuerpo: r.ok ? { ok: true, salida: r.salida } : { error: r.salida || 'Ha fallado' } };
+  }
   const r = await ejecutar(comando, s.proyecto);
   if (!r.ok) anotar(`  falló: ${r.error}`);
   programarRecheck(3000, s.tipo === 'remoto');
-  // Acciones que abren un terminal (desbloquear la bóveda): se vuelve a mirar cuando el usuario ya ha escrito.
-  if (s.tipo === 'remoto' && extra) for (const ms of [20_000, 45_000, 90_000]) setTimeout(cicloRemoto, ms);
   return { estado: r.ok ? 200 : 500, cuerpo: r };
+}
+
+function ejecutarConEntrada(comando, entrada, cwd) {
+  return new Promise((resolver) => {
+    const hijo = spawn(comando, { shell: true, windowsHide: true, cwd: cwd && fs.existsSync(cwd) ? cwd : undefined });
+    let salida = '';
+    hijo.stdout.on('data', (c) => { salida += c; });
+    hijo.stderr.on('data', (c) => { salida += c; });
+    const reloj = setTimeout(() => hijo.kill(), 60_000);
+    hijo.on('error', (e) => { clearTimeout(reloj); resolver({ ok: false, salida: e.message }); });
+    hijo.on('close', (codigo) => { clearTimeout(reloj); resolver({ ok: codigo === 0, salida: salida.trim().slice(-500) }); });
+    hijo.stdin.end(`${entrada}\n`);
+  });
 }
 
 async function interruptor(id, idInterruptor, valor) {
@@ -398,8 +418,8 @@ const servidor = http.createServer(async (req, res) => {
       return responderJson(res, 200, { fichero: s.registro, lineas: colaFichero(s.registro, 120) });
     }
     if (req.method === 'POST' && url.pathname === '/api/accion') {
-      const { id, accion: nombre } = await leerCuerpo(req);
-      const r = await accion(String(id), String(nombre));
+      const { id, accion: nombre, entrada } = await leerCuerpo(req);
+      const r = await accion(String(id), String(nombre), entrada);
       return responderJson(res, r.estado, r.cuerpo);
     }
     if (req.method === 'POST' && url.pathname === '/api/interruptor') {
@@ -428,6 +448,7 @@ const servidor = http.createServer(async (req, res) => {
       const { fuente, instalar } = await leerCuerpo(req);
       try {
         const r = await importar(fuente, { instalar: instalar !== false });
+        servicios = cargarServicios();   // que lo nuevo valga ya, sin esperar al siguiente ciclo
         programarRecheck(2000, true);
         return responderJson(res, 200, r);
       } catch (e) {
@@ -440,6 +461,7 @@ const servidor = http.createServer(async (req, res) => {
       if (!s) return responderJson(res, 404, { error: `No existe el servicio ${id}` });
       try {
         const r = url.pathname === '/api/actualizar' ? await actualizar(s) : await quitar(s, { desinstalar: Boolean(desinstalar) });
+        servicios = cargarServicios();
         programarRecheck(1500, s.tipo === 'remoto');
         return responderJson(res, 200, r);
       } catch (e) {

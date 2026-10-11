@@ -129,7 +129,10 @@ Se declara en la lista `interruptores`:
 
 - `acciones.extra`: lista de botones propios. Cada uno con `id`, `etiqueta`, `comando` y,
   opcional, `si`: `"bloqueada"` o `"desbloqueada"` para enseñarlo solo según `sesion_remota`.
-  Un comando que necesite que el usuario escriba algo abre su propia ventana de terminal con `start`.
+  Si el comando necesita un dato del usuario (una contraseña), se añade `entrada`:
+  `{ "etiqueta": "Contraseña maestra", "secreta": true, "ayuda": "..." }`. El panel lo pide en una
+  ventana propia y se lo pasa al comando por su entrada estándar. No va en la línea de comandos ni
+  se anota en ningún registro.
 - Un `demonio` sin `acciones.parar` (o con `null`) tiene botón Parar igualmente: el panel mata el proceso de
   `proceso_contiene` y el que escucha en `puerto`. Si tiene `tarea_windows`, además desactiva la tarea
   para que no lo relance, y "Arrancar" la vuelve a activar. Con `"parar": false` no hay botón Parar:
