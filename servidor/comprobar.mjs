@@ -17,7 +17,9 @@ async function datosWindows(nombresTareas, necesitaProcesos) {
 $ErrorActionPreference = 'SilentlyContinue'
 $procesos = @()
 if (${necesitaProcesos ? '$true' : '$false'}) {
-  $procesos = @(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine } | Select-Object ProcessId, CommandLine)
+  # Algunas líneas de comando traen caracteres de control que ConvertTo-Json de PowerShell 5.1 no escapa.
+  $procesos = @(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine } |
+    Select-Object ProcessId, @{ n = 'CommandLine'; e = { $_.CommandLine -replace '[\\x00-\\x1F]', ' ' } })
 }
 $tareas = @()
 foreach ($n in @(${nombres || "''"})) {
@@ -37,7 +39,9 @@ foreach ($n in @(${nombres || "''"})) {
     ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', codificado],
     { timeout: 45_000, maxBuffer: 32 * 1024 * 1024, windowsHide: true },
   );
-  const datos = JSON.parse(stdout);
+  // Por si acaso: un carácter de control suelto rompería JSON.parse y dejaría todo el PC sin datos.
+  // eslint-disable-next-line no-control-regex
+  const datos = JSON.parse(stdout.replace(/[\u0000-\u001f]/g, ' '));
   return { procesos: lista(datos.procesos), tareas: lista(datos.tareas) };
 }
 

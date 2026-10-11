@@ -413,7 +413,34 @@
     );
   }
 
-  function pintar(datos) {
+  // ---------- Modo captura: #captura (y opcional &ocultar=id1,id2) ----------
+  // Para enseñar el panel sin datos sensibles: quita URL, rutas y el nombre del equipo, y oculta los
+  // servicios indicados (por defecto, la bóveda). Lo demás es real.
+  const parametrosCaptura = new URLSearchParams(location.hash.slice(1));
+  const CAPTURA = parametrosCaptura.has('captura');
+  const OCULTAR = new Set((parametrosCaptura.get('ocultar') || 'vaultwarden').split(',').filter(Boolean));
+  const limpiarTexto = (t) => String(t ?? '')
+    .replace(/https?:\/\/\S+\s*/gi, '')
+    .replace(/[A-Za-z]:[\\/][^\s·,;]*/g, '')
+    .replace(/(^|\s)\/(home|srv|var|etc|tmp)\/\S*/g, '$1')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  function paraCaptura(datos) {
+    if (!CAPTURA) return datos;
+    const servicios = datos.servicios
+      .filter((s) => !OCULTAR.has(s.id))
+      .map((s) => ({
+        ...s,
+        proyecto: null,
+        mensaje: limpiarTexto(s.mensaje),
+        detalles: s.detalles.map(limpiarTexto).filter(Boolean),
+        indicadores: s.indicadores.map((i) => ({ ...i, valor: limpiarTexto(i.valor) || i.valor })),
+      }));
+    return { ...datos, equipo: '', servicios };
+  }
+
+  function pintar(datosReales) {
+    const datos = paraCaptura(datosReales);
     const propio = datos.servicios.find((s) => s.id === ID_PROPIO) || null;
     // Orden guardado primero; los servicios nuevos que no estén en él van al final, por nombre.
     const posicion = new Map((datos.orden || []).map((id, i) => [id, i]));
